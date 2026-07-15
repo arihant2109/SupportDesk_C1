@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SupportDesk — Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#4F46E5;
+    --primary-hover:#4338CA;
+    --page-bg:#F8FAFC;
+    --surface:#FFFFFF;
+    --border:#E2E8F0;
+    --text-primary:#0F172A;
+    --text-secondary:#64748B;
+    --danger-bg:#FEF2F2;
+    --danger-border:#FCA5A5;
+    --danger-text:#B91C1C;
+    --danger-text-dark:#7F1D1D;
+
+    --status-open-bg:#DBEAFE;   --status-open-fg:#1D4ED8;
+    --status-inprogress-bg:#FEF3C7; --status-inprogress-fg:#B45309;
+    --status-resolved-bg:#D1FAE5; --status-resolved-fg:#047857;
+    --status-closed-bg:#E5E7EB; --status-closed-fg:#374151;
+    --status-cancelled-bg:#FEE2E2; --status-cancelled-fg:#B91C1C;
+
+    --priority-low-bg:#F1F5F9; --priority-low-fg:#475569;
+    --priority-medium-bg:#FEF3C7; --priority-medium-fg:#B45309;
+    --priority-high-bg:#FFEDD5; --priority-high-fg:#C2410C;
+    --priority-critical-bg:#FEE2E2; --priority-critical-fg:#B91C1C;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family:'Inter',sans-serif; background:#111827; color:var(--text-primary);
+  }
+
+  /* ---------- Screen switcher chrome ---------- */
+  .switcher{
+    position:sticky; top:0; z-index:100;
+    background:#0B1120; border-bottom:1px solid #1E293B;
+    padding:14px 24px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .switcher .brand{
+    color:#F1F5F9; font-weight:700; font-size:14px; margin-right:14px; white-space:nowrap;
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{ width:10px; height:10px; border-radius:3px; background:var(--primary); display:inline-block; }
+  .switcher button{
+    font-family:inherit; font-size:12.5px; font-weight:600; color:#CBD5E1;
+    background:#1E293B; border:1px solid #334155; border-radius:7px; padding:8px 13px;
+    cursor:pointer; transition:all .15s ease; white-space:nowrap;
+  }
+  .switcher button:hover{ background:#293548; color:#fff; }
+  .switcher button.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+
+  .screen{ display:none; background:var(--page-bg); min-height:100vh; }
+  .screen.active{ display:block; }
+
+  /* ---------- Top nav (in-app) ---------- */
+  .topnav{
+    height:72px; background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; padding:0 32px;
+  }
+  .logo-group{ display:flex; align-items:center; gap:10px; }
+  .logo-mark{ width:28px; height:28px; border-radius:8px; background:var(--primary); }
+  .logo-text{ font-weight:800; font-size:18px; }
+  .user-group{ display:flex; align-items:center; gap:12px; }
+  .user-text{ text-align:right; }
+  .user-name{ font-weight:600; font-size:13px; }
+  .user-role{ font-size:11px; color:var(--text-secondary); }
+  .avatar{ width:36px; height:36px; border-radius:50%; background:#C7D2FE; }
+
+  .body-pad{ padding:32px; max-width:1440px; margin:0 auto; }
+  h1.page-title{ font-size:24px; font-weight:800; margin:0 0 20px; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .toolbar-left{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .search-input, .filter-select{
+    display:flex; align-items:center; gap:8px; background:var(--surface);
+    border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px;
+  }
+  .search-input{ width:280px; color:var(--text-secondary); }
+  .search-input.active-state, .filter-select.active-state{ border-color: var(--primary); border-width:1.5px; color:var(--text-primary); font-weight:500; }
+  .filter-select{ width:170px; justify-content:space-between; color:var(--text-primary); cursor:pointer; }
+  .btn{
+    font-family:inherit; font-size:13px; font-weight:600; border-radius:8px; border:1px solid transparent;
+    padding:10px 16px; cursor:pointer; transition:opacity .15s ease;
+  }
+  .btn:hover{ opacity:.9; }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-secondary{ background:var(--surface); border-color:var(--border); color:var(--text-primary); }
+  .btn-ghost{ background:transparent; border:none; color:var(--text-secondary); }
+  .btn-danger{ background:var(--danger-text); color:#fff; }
+
+  /* ---------- Table ---------- */
+  .table-wrap{ background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  table{ width:100%; border-collapse:collapse; }
+  thead tr{ background:#F1F5F9; }
+  th{ text-align:left; font-size:12px; font-weight:600; color:var(--text-secondary); padding:12px 16px; }
+  td{ padding:14px 16px; font-size:13px; border-top:1px solid var(--border); vertical-align:middle; }
+  tbody tr{ background:var(--surface); cursor:pointer; transition:background .12s ease; }
+  tbody tr:hover{ background:#FAFBFF; }
+  td.title-cell{ font-weight:500; }
+  td.title-cell.highlight{ color:var(--primary); font-weight:600; }
+  .view-link{ color:var(--primary); font-weight:600; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+  .row-count{ font-size:12px; color:var(--text-secondary); margin-top:12px; }
+
+  .badge{ display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .status-Open{ background:var(--status-open-bg); color:var(--status-open-fg); }
+  .status-In-Progress{ background:var(--status-inprogress-bg); color:var(--status-inprogress-fg); }
+  .status-Resolved{ background:var(--status-resolved-bg); color:var(--status-resolved-fg); }
+  .status-Closed{ background:var(--status-closed-bg); color:var(--status-closed-fg); }
+  .status-Cancelled{ background:var(--status-cancelled-bg); color:var(--status-cancelled-fg); }
+  .priority-Low{ background:var(--priority-low-bg); color:var(--priority-low-fg); }
+  .priority-Medium{ background:var(--priority-medium-bg); color:var(--priority-medium-fg); }
+  .priority-High{ background:var(--priority-high-bg); color:var(--priority-high-fg); }
+  .priority-Critical{ background:var(--priority-critical-bg); color:var(--priority-critical-fg); }
+
+  /* ---------- Empty / error states ---------- */
+  .state-box{
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:70px 40px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; text-align:center;
+  }
+  .state-box .emoji{ font-size:32px; }
+  .state-box h3{ margin:0; font-size:16px; font-weight:700; }
+  .state-box p{ margin:0; font-size:13px; color:var(--text-secondary); max-width:360px; }
+  .state-box.error{ background:var(--danger-bg); border-color:var(--danger-border); }
+  .state-box.error h3{ color:var(--danger-text); }
+  .state-box.error p{ color:var(--danger-text-dark); }
+
+  /* ---------- Modal (create ticket) ---------- */
+  .modal-overlay{
+    min-height:100vh; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; padding:40px;
+  }
+  .modal{
+    width:560px; max-width:100%; background:var(--surface); border-radius:14px; padding:28px;
+    display:flex; flex-direction:column; gap:18px;
+  }
+  .modal-header{ display:flex; align-items:center; justify-content:space-between; }
+  .modal-header h2{ margin:0; font-size:18px; font-weight:800; }
+  .modal-close{ width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:none; border:none; color:var(--text-secondary); cursor:pointer; }
+  .modal-close:hover{ background:#F1F5F9; color:var(--text-primary); }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field label{ font-size:13px; font-weight:600; }
+  .field label .req{ color:var(--danger-text); }
+  .field input, .field textarea, .field select{
+    font-family:inherit; font-size:13px; padding:11px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface); color:var(--text-primary); width:100%;
+  }
+  .field textarea{ resize:vertical; min-height:80px; }
+  .field.has-error input, .field.has-error textarea, .field.has-error select{ border-color:var(--danger-text); border-width:1.5px; }
+  .error-msg{ font-size:12px; font-weight:500; color:var(--danger-text); }
+  .field-row{ display:flex; gap:16px; }
+  .field-row .field{ flex:1; }
+  .modal-footer{ display:flex; justify-content:flex-end; gap:12px; margin-top:4px; }
+
+  /* ---------- Ticket detail ---------- */
+  .breadcrumb{ font-size:13px; color:var(--text-secondary); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .breadcrumb a{ color:var(--primary); font-weight:500; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .detail-columns{ display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; }
+  .left-col{ flex:1; min-width:420px; display:flex; flex-direction:column; gap:18px; }
+  .title-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .title-row h2{ margin:0; font-size:20px; font-weight:800; line-height:1.3; }
+  .section-label{ font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.02em; }
+  .desc-text{ font-size:13px; line-height:1.6; color:var(--text-primary); }
+
+  .right-panel{ width:340px; display:flex; flex-direction:column; gap:16px; }
+  .divider{ height:1px; background:var(--border); border:none; margin:4px 0; }
+  .transitions{ display:flex; flex-direction:column; gap:8px; }
+  .transition-btn{
+    font-family:inherit; text-align:left; font-size:12px; font-weight:600; border-radius:8px; padding:10px 14px;
+    cursor:pointer; background:var(--surface); border:1px solid var(--primary); color:var(--primary);
+    display:flex; align-items:center; gap:8px;
+  }
+  .transition-btn:hover{ background:#EEF2FF; }
+  .transition-btn.disabled{
+    background:#F1F5F9; border-color:var(--border); color:#CBD5E1; cursor:not-allowed;
+  }
+  .transitions-note{ font-size:11px; color:var(--text-secondary); line-height:1.5; }
+  .meta-line{ font-size:11px; color:var(--text-secondary); }
+  .value-strong{ font-size:13px; font-weight:600; }
+
+  .comments-card{ margin-top:20px; display:flex; flex-direction:column; gap:16px; }
+  .comments-card h3{ margin:0; font-size:15px; font-weight:800; }
+  .comment{ display:flex; gap:12px; }
+  .comment .avatar{ width:32px; height:32px; flex-shrink:0; }
+  .comment-body{ display:flex; flex-direction:column; gap:4px; }
+  .comment-head{ display:flex; align-items:center; gap:8px; }
+  .comment-name{ font-size:13px; font-weight:600; }
+  .comment-time{ font-size:11px; color:var(--text-secondary); }
+  .comment-msg{ font-size:13px; line-height:1.5; }
+  .comment-input{
+    background:#F8FAFC; border:1px solid var(--border); border-radius:8px; padding:12px; font-size:13px;
+    color:var(--text-secondary); min-height:60px; font-family:inherit; width:100%; resize:vertical;
+  }
+  .comment-actions{ display:flex; justify-content:flex-end; align-items:center; }
+
+  /* Toast */
+  .toast-wrap{ position:relative; }
+  .toast{
+    position:absolute; top:24px; right:32px; display:flex; gap:10px; align-items:flex-start;
+    background:var(--danger-bg); border:1px solid var(--danger-border); border-radius:10px; padding:14px 16px;
+    max-width:340px; box-shadow:0 8px 24px rgba(0,0,0,.08);
+  }
+  .toast strong{ display:block; font-size:13px; color:var(--danger-text-dark); margin-bottom:2px; }
+  .toast span{ font-size:12px; color:#991B1B; line-height:1.4; }
+
+  /* Edit mode input variants reuse .field */
+
+  /* ---------- State machine diagram ---------- */
+  .diagram-intro p{ font-size:13px; color:var(--text-secondary); margin:6px 0 24px; }
+  .diagram-canvas{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:48px 32px; }
+  .chain{ display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; margin-bottom:40px; }
+  .state-node{ width:150px; height:56px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  .arrow{ font-size:18px; color:var(--text-secondary); }
+  .cancel-notes{ display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
+  .note{ border-radius:10px; padding:16px; width:260px; display:flex; flex-direction:column; gap:6px; }
+  .note.danger{ background:var(--danger-bg); border:1px solid var(--danger-border); }
+  .note.neutral{ background:#F1F5F9; border:1px solid var(--border); }
+  .note strong{ font-size:13px; }
+  .note.danger strong{ color:var(--danger-text); }
+  .note p{ margin:0; font-size:11px; color:var(--text-secondary); line-height:1.5; }
+  .note.danger p{ color:var(--danger-text-dark); }
+
+
+  /* ---------- Icons ---------- */
+  .icon{ width:16px; height:16px; flex-shrink:0; vertical-align:-3px; }
+  .icon-sm{ width:13px; height:13px; }
+  .icon-lg{ width:30px; height:30px; }
+  .btn{ display:inline-flex; align-items:center; gap:6px; }
+  .icon-btn{
+    width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary);
+    cursor:pointer; transition:all .15s ease;
+  }
+  .icon-btn:hover{ background:#F1F5F9; color:var(--text-primary); border-color:#CBD5E1; }
+  .icon-btn.round{ border-radius:50%; }
+  .icon-btn.sm{ width:28px; height:28px; }
+  .icon-btn.primary{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .icon-btn.primary:hover{ background:var(--primary-hover); border-color:var(--primary-hover); }
+  .icon-btn.ghost{ background:transparent; border-color:transparent; }
+  .icon-btn.ghost:hover{ background:#F1F5F9; }
+  .field label{ display:flex; align-items:center; gap:6px; }
+  .comment-name-row .icon{ color:var(--text-secondary); }
+
+  @media (max-width: 900px){
+    .detail-columns{ flex-direction:column; }
+    .right-panel{ width:100%; }
+    .left-col{ min-width:0; width:100%; }
+  }
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></symbol>
+  <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  <symbol id="icon-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="icon-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+  <symbol id="icon-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></symbol>
+  <symbol id="icon-play-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10 8 16 12 10 16 10 8"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="icon-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></symbol>
+  <symbol id="icon-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+  <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="icon-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+</svg>
+
+<div class="switcher" role="tablist" aria-label="Screen switcher">
+  <span class="brand"><span class="dot"></span>SupportDesk — Design Preview</span>
+  <button class="tab-btn active" data-target="s-list-default">Ticket List</button>
+  <button class="tab-btn" data-target="s-list-empty">List — Empty</button>
+  <button class="tab-btn" data-target="s-list-error">List — Error</button>
+  <button class="tab-btn" data-target="s-create">Create Ticket</button>
+  <button class="tab-btn" data-target="s-create-error">Create — Errors</button>
+  <button class="tab-btn" data-target="s-detail">Ticket Detail</button>
+  <button class="tab-btn" data-target="s-detail-edit">Detail — Edit</button>
+  <button class="tab-btn" data-target="s-detail-invalid">Detail — Invalid Transition</button>
+  <button class="tab-btn" data-target="s-statemachine">State Machine</button>
+  <button class="tab-btn" data-target="s-search">Search &amp; Filter</button>
+</div>
+
+<!-- ===================== 1.1 TICKET LIST — DEFAULT ===================== -->
+<section class="screen active" id="s-list-default">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <h1 class="page-title">Tickets</h1>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-input"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-search"/></svg> <span>Search tickets by title or keyword...</span></div>
+        <div class="filter-select"><span>Status: All</span><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg></div>
+      </div>
+      <button class="btn btn-primary" onclick="showScreen('s-create')"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-plus"/></svg> Create Ticket</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Assignee</th><th>Created</th><th>Updated</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr onclick="showScreen('s-detail')">
+            <td>#101</td><td class="title-cell">Login page throws 500 error on submit</td>
+            <td><span class="badge priority-Critical">Critical</span></td>
+            <td><span class="badge status-Open">Open</span></td>
+            <td>Unassigned</td><td>01 Jul 2026</td><td>01 Jul 2026</td>
+            <td><a class="view-link">View <svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-right"/></svg></a></td>
+          </tr>
+          <tr onclick="showScreen('s-detail')">
+            <td>#100</td><td class="title-cell">Export to CSV missing last column</td>
+            <td><span class="badge priority-High">High</span></td>
+            <td><span class="badge status-In-Progress">In Progress</span></td>
+            <td>Arjun Mehta</td><td>30 Jun 2026</td><td>01 Jul 2026</td>
+            <td><a class="view-link">View <svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-right"/></svg></a></td>
+          </tr>
+          <tr onclick="showScreen('s-detail')">
+            <td>#99</td><td class="title-cell">Add dark mode toggle</td>
+            <td><span class="badge priority-Low">Low</span></td>
+            <td><span class="badge status-Resolved">Resolved</span></td>
+            <td>Priya Sharma</td><td>28 Jun 2026</td><td>30 Jun 2026</td>
+            <td><a class="view-link">View <svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-right"/></svg></a></td>
+          </tr>
+          <tr onclick="showScreen('s-detail')">
+            <td>#98</td><td class="title-cell">Password reset email delayed</td>
+            <td><span class="badge priority-Medium">Medium</span></td>
+            <td><span class="badge status-Closed">Closed</span></td>
+            <td>Rohan Das</td><td>25 Jun 2026</td><td>29 Jun 2026</td>
+            <td><a class="view-link">View <svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-right"/></svg></a></td>
+          </tr>
+          <tr onclick="showScreen('s-detail')">
+            <td>#97</td><td class="title-cell">Duplicate ticket - merge requested</td>
+            <td><span class="badge priority-Low">Low</span></td>
+            <td><span class="badge status-Cancelled">Cancelled</span></td>
+            <td>Priya Sharma</td><td>20 Jun 2026</td><td>21 Jun 2026</td>
+            <td><a class="view-link">View <svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-right"/></svg></a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="row-count">Showing 5 of 42 tickets</div>
+  </div>
+</section>
+
+<!-- ===================== 1.2 TICKET LIST — EMPTY ===================== -->
+<section class="screen" id="s-list-empty">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <h1 class="page-title">Tickets</h1>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-input active-state"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-search"/></svg> <span>onboarding flow</span></div>
+        <div class="filter-select"><span>Status: All</span><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg></div>
+      </div>
+      <button class="btn btn-primary" onclick="showScreen('s-create')"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-plus"/></svg> Create Ticket</button>
+    </div>
+    <div class="state-box">
+      <div class="emoji"><svg class="icon-lg" viewBox="0 0 24 24"><use href="#icon-inbox"/></svg></div>
+      <h3>No tickets found</h3>
+      <p>Try adjusting your search or filter, or create a new ticket.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 1.3 TICKET LIST — ERROR ===================== -->
+<section class="screen" id="s-list-error">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <h1 class="page-title">Tickets</h1>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-input"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-search"/></svg> <span>Search tickets by title or keyword...</span></div>
+        <div class="filter-select"><span>Status: All</span><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg></div>
+      </div>
+      <button class="btn btn-primary" onclick="showScreen('s-create')"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-plus"/></svg> Create Ticket</button>
+    </div>
+    <div class="state-box error">
+      <div class="emoji"><svg class="icon-lg" viewBox="0 0 24 24"><use href="#icon-alert"/></svg></div>
+      <h3>Couldn't load tickets</h3>
+      <p>Something went wrong while fetching data. Please retry.</p>
+      <button class="btn btn-danger" style="margin-top:6px;"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-refresh"/></svg> Retry</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2.1 CREATE TICKET ===================== -->
+<section class="screen" id="s-create">
+  <div class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Create New Ticket</h2>
+        <button class="modal-close" onclick="showScreen('s-list-default')"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-x"/></svg></button>
+      </div>
+      <div class="field">
+        <label>Title <span class="req">*</span></label>
+        <input type="text" value="Checkout button unresponsive on Safari">
+      </div>
+      <div class="field">
+        <label>Description <span class="req">*</span></label>
+        <textarea placeholder="Steps to reproduce, expected vs actual behavior..."></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Priority <span class="req">*</span></label>
+          <select><option>High</option><option>Medium</option><option>Low</option><option>Critical</option></select>
+        </div>
+        <div class="field">
+          <label>Assignee</label>
+          <select><option>Unassigned</option><option>Arjun Mehta</option><option>Priya Sharma</option><option>Rohan Das</option></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="showScreen('s-list-default')">Cancel</button>
+        <button class="btn btn-primary" onclick="showScreen('s-list-default')">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2.2 CREATE TICKET — VALIDATION ERRORS ===================== -->
+<section class="screen" id="s-create-error">
+  <div class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Create New Ticket</h2>
+        <button class="modal-close" onclick="showScreen('s-list-default')"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-x"/></svg></button>
+      </div>
+      <div class="field has-error">
+        <label>Title <span class="req">*</span></label>
+        <input type="text" placeholder="Brief summary of the issue">
+        <span class="error-msg"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-alert"/></svg> Title is required</span>
+      </div>
+      <div class="field has-error">
+        <label>Description <span class="req">*</span></label>
+        <textarea placeholder="Steps to reproduce, expected vs actual behavior..."></textarea>
+        <span class="error-msg"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-alert"/></svg> Description is required</span>
+      </div>
+      <div class="field-row">
+        <div class="field has-error">
+          <label>Priority <span class="req">*</span></label>
+          <select><option selected disabled>Select priority</option><option>High</option><option>Medium</option><option>Low</option><option>Critical</option></select>
+          <span class="error-msg"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-alert"/></svg> Priority is required</span>
+        </div>
+        <div class="field">
+          <label>Assignee</label>
+          <select><option>Unassigned</option><option>Arjun Mehta</option></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="showScreen('s-list-default')">Cancel</button>
+        <button class="btn btn-primary">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 3.1 TICKET DETAIL — VIEW ===================== -->
+<section class="screen" id="s-detail">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <div class="breadcrumb"><a onclick="showScreen('s-list-default')"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-left"/></svg> Back to Tickets</a> <span>/</span> <span>Ticket #100</span></div>
+    <div class="detail-columns">
+      <div class="left-col card">
+        <div class="title-row">
+          <h2>Export to CSV missing last column</h2>
+          <button class="icon-btn" title="Edit ticket" aria-label="Edit ticket" onclick="showScreen('s-detail-edit')"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"/></svg></button>
+        </div>
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Description</div>
+          <div class="desc-text">When exporting the ticket list to CSV, the last column (Updated At) is missing from the generated file. Reproduced on Chrome and Firefox.</div>
+        </div>
+
+        <div class="comments-card">
+          <h3>Comments (2)</h3>
+          <div class="comment">
+            <div class="avatar"></div>
+            <div class="comment-body">
+              <div class="comment-head"><span class="comment-name">Arjun Mehta</span><span class="comment-time">01 Jul 2026, 10:12 AM</span></div>
+              <div class="comment-msg">Confirmed the bug. The CSV export util is truncating the last mapped field. Investigating now.</div>
+            </div>
+          </div>
+          <div class="comment">
+            <div class="avatar"></div>
+            <div class="comment-body">
+              <div class="comment-head"><span class="comment-name">Priya Sharma</span><span class="comment-time">01 Jul 2026, 11:40 AM</span></div>
+              <div class="comment-msg">Thanks for the update — let me know if you need the sample export file.</div>
+            </div>
+          </div>
+          <textarea class="comment-input" placeholder="Write a comment..."></textarea>
+          <div class="comment-actions"><button class="icon-btn primary round" title="Post comment" aria-label="Post comment"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-send"/></svg></button></div>
+        </div>
+      </div>
+
+      <div class="right-panel card">
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Status</div>
+          <span class="badge status-In-Progress">In Progress</span>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Move to</div>
+          <div class="transitions">
+            <button class="transition-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-check-circle"/></svg> Resolved</button>
+            <button class="transition-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-ban"/></svg> Cancelled</button>
+            <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-circle"/></svg> Open</button>
+            <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-lock"/></svg> Closed</button>
+          </div>
+          <p class="transitions-note">Only valid transitions are enabled. Invalid moves are rejected by the backend.</p>
+        </div>
+
+        <hr class="divider">
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Priority</div>
+          <span class="badge priority-High">High</span>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Assignee</div>
+          <div class="value-strong">Arjun Mehta</div>
+        </div>
+
+        <div class="meta-line">Created by Priya Sharma · 30 Jun 2026</div>
+        <div class="meta-line">Last updated 01 Jul 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 3.2 TICKET DETAIL — EDIT MODE ===================== -->
+<section class="screen" id="s-detail-edit">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <div class="breadcrumb"><a onclick="showScreen('s-list-default')"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-left"/></svg> Back to Tickets</a> <span>/</span> <span>Ticket #100</span></div>
+    <div class="detail-columns">
+      <div class="left-col card">
+        <div class="title-row">
+          <h2 style="flex:1;">Edit ticket</h2>
+          <button class="btn btn-primary" onclick="showScreen('s-detail')"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-check"/></svg> Save Changes</button>
+        </div>
+        <div class="field">
+          <label>Title</label>
+          <input type="text" value="Export to CSV missing last column">
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <textarea style="min-height:110px;">When exporting the ticket list to CSV, the last column (Updated At) is missing from the generated file. Reproduced on Chrome and Firefox.</textarea>
+        </div>
+      </div>
+
+      <div class="right-panel card">
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Status</div>
+          <span class="badge status-In-Progress">In Progress</span>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Move to</div>
+          <div class="transitions">
+            <button class="transition-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-check-circle"/></svg> Resolved</button>
+            <button class="transition-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-ban"/></svg> Cancelled</button>
+            <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-circle"/></svg> Open</button>
+            <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-lock"/></svg> Closed</button>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="field">
+          <label>Priority</label>
+          <select><option selected>High</option><option>Medium</option><option>Low</option><option>Critical</option></select>
+        </div>
+
+        <div class="field">
+          <label>Assignee</label>
+          <select><option selected>Arjun Mehta</option><option>Priya Sharma</option><option>Rohan Das</option><option>Unassigned</option></select>
+        </div>
+
+        <div class="meta-line">Created by Priya Sharma · 30 Jun 2026</div>
+        <div class="meta-line">Last updated 01 Jul 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 3.3 TICKET DETAIL — INVALID TRANSITION ===================== -->
+<section class="screen" id="s-detail-invalid">
+  <div class="toast-wrap">
+    <div class="topnav">
+      <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+      <div class="user-group">
+        <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+        <div class="avatar"></div>
+      </div>
+    </div>
+    <div class="toast">
+      <svg class="icon" viewBox="0 0 24 24"><use href="#icon-alert"/></svg>
+      <div>
+        <strong>Transition rejected</strong>
+        <span>Can't move from Resolved to Open. Invalid state transition.</span>
+      </div>
+    </div>
+    <div class="body-pad">
+      <div class="breadcrumb"><a onclick="showScreen('s-list-default')"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-left"/></svg> Back to Tickets</a> <span>/</span> <span>Ticket #99</span></div>
+      <div class="detail-columns">
+        <div class="left-col card">
+          <div class="title-row">
+            <h2>Add dark mode toggle</h2>
+            <button class="icon-btn" title="Edit ticket" aria-label="Edit ticket"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"/></svg></button>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:8px;">Description</div>
+            <div class="desc-text">Users have requested a dark mode option in account settings. Design mocks attached in comments.</div>
+          </div>
+        </div>
+        <div class="right-panel card">
+          <div>
+            <div class="section-label" style="margin-bottom:8px;">Status</div>
+            <span class="badge status-Resolved">Resolved</span>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:8px;">Move to</div>
+            <div class="transitions">
+              <button class="transition-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-lock"/></svg> Closed</button>
+              <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-circle"/></svg> Open</button>
+              <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-play-circle"/></svg> In Progress</button>
+              <button class="transition-btn disabled" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-ban"/></svg> Cancelled</button>
+            </div>
+            <p class="transitions-note">The attempted move to "Open" was blocked — Resolved tickets may only proceed to Closed.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 4.1 STATE MACHINE DIAGRAM ===================== -->
+<section class="screen" id="s-statemachine">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <h1 class="page-title" style="margin-bottom:2px;">Ticket Status State Machine</h1>
+    <div class="diagram-intro"><p>Enforced server-side. Any transition not listed below is rejected with a 400 error.</p></div>
+    <div class="diagram-canvas">
+      <div class="chain">
+        <div class="state-node status-Open">Open</div>
+        <div class="arrow">→</div>
+        <div class="state-node status-In-Progress">In Progress</div>
+        <div class="arrow">→</div>
+        <div class="state-node status-Resolved">Resolved</div>
+        <div class="arrow">→</div>
+        <div class="state-node status-Closed">Closed</div>
+      </div>
+      <div class="cancel-notes">
+        <div class="note danger">
+          <strong>Open → Cancelled</strong>
+          <p>Allowed: a ticket can be cancelled before work starts.</p>
+        </div>
+        <div class="note danger">
+          <strong>In Progress → Cancelled</strong>
+          <p>Allowed: work can be abandoned mid-flight.</p>
+        </div>
+        <div class="note neutral">
+          <strong>Resolved, Closed &amp; Cancelled</strong>
+          <p>Terminal states — no further transitions allowed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 4.2 SEARCH & FILTER RESULTS ===================== -->
+<section class="screen" id="s-search">
+  <div class="topnav">
+    <div class="logo-group"><div class="logo-mark"></div><div class="logo-text">SupportDesk</div></div>
+    <div class="user-group">
+      <div class="user-text"><div class="user-name">Priya Sharma</div><div class="user-role">Agent</div></div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+  <div class="body-pad">
+    <h1 class="page-title">Tickets</h1>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-input active-state"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-search"/></svg> <span>export</span></div>
+        <div class="filter-select active-state"><span>Status: In Progress</span><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg></div>
+      </div>
+      <button class="btn btn-ghost"><svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-x"/></svg> Clear filters</button>
+    </div>
+    <div class="row-count" style="margin:0 0 12px;">1 result for "export" in status In Progress</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Assignee</th><th>Created</th><th>Updated</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr onclick="showScreen('s-detail')">
+            <td>#100</td><td class="title-cell highlight">Export to CSV missing last column</td>
+            <td><span class="badge priority-High">High</span></td>
+            <td><span class="badge status-In-Progress">In Progress</span></td>
+            <td>Arjun Mehta</td><td>30 Jun 2026</td><td>01 Jul 2026</td>
+            <td><a class="view-link">View <svg class="icon icon-sm" viewBox="0 0 24 24"><use href="#icon-arrow-right"/></svg></a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.target === id);
+    });
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => showScreen(btn.dataset.target));
+  });
+</script>
+
+</body>
+</html>

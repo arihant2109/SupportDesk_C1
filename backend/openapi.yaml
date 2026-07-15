@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: Support Ticket Management API
+  version: 1.0.0
+  description: API for managing support tickets with enforced status state machine
+servers:
+  - url: http://localhost:3001/api
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /users:
+    get:
+      summary: List seeded users
+      responses:
+        '200':
+          description: User list
+  /tickets:
+    get:
+      summary: List tickets with search, filter, pagination
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, in_progress, resolved, closed, cancelled] }
+        - name: priority
+          in: query
+          schema: { type: string, enum: [low, medium, high, critical] }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Paginated ticket list
+    post:
+      summary: Create a ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, description, priority, createdById]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                priority: { type: string }
+                createdById: { type: string, format: uuid }
+                assignedToId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Created
+        '422':
+          description: Validation error
+  /tickets/{id}:
+    get:
+      summary: Get ticket detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Ticket with comments
+        '404':
+          description: Not found
+    patch:
+      summary: Update ticket fields
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Updated
+  /tickets/{id}/status:
+    patch:
+      summary: Change ticket status (state machine enforced)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, changedById]
+              properties:
+                status: { type: string }
+                changedById: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Status updated
+        '422':
+          description: Invalid transition
+  /tickets/{id}/comments:
+    post:
+      summary: Add comment to ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Comment created
